@@ -7,21 +7,14 @@
     "@testing-library/react": "^13.3.0",
     "@testing-library/user-event": "^13.5.0",
     "copy-files-from-to": "^3.2.2",
-    "grunt-cli": "^1.4.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
-  "copyFiles": [
-    {
-        "from": "node_modules/jquery/dist/jquery.js",
-        "to": "scripts/jquery/jquery.js"
-    }
-],
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "react-scripts build & grunt clean --force & grunt copy",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -45,6 +38,8 @@
   },
   "devDependencies": {
     "grunt": "^1.5.3",
+    "grunt-contrib-clean": "^2.0.1",
+    "grunt-contrib-copy": "^1.0.0",
     "grunt-move": "^2.0.0"
   }
 }
