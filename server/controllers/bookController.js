@@ -2,140 +2,90 @@ const mongo = require("mongodb");
 const db = require("../config/database");
 
 const getAllBooks = async (req, res) => {
-  let book = [];
-  await db
-    .getBooksCollection()
-    .find({})
-    .forEach((doc) => {
-      db.getAuthorsCollection().findOne({ _id: doc.author }, (erro, res) => {
-        book.push({ ...doc, author: res.name });
-        console.log(book);
-      });
-    });
-  res.json(book);
-  // .toArray((error, response) => {
-  //   if (error) {
-  //     console.log(error);
-  //     res.statusCode = 500;
-  //   }
+  let books = await db
+    .books()
+    .aggregate([
+      {
+        $lookup: {
+          from: "authors",
+          localField: "author",
+          foreignField: "_id",
+          as: "author",
+        },
+      },
+    ])
+    .toArray();
 
-  //   res.json(response);
-  // });
+  res.json(books);
 };
 
 //#geet book by id controller
 const getBookById = async (req, res) => {
+  let bookModel = {};
   const bookId = req.params["bookId"].trim().toString();
   const mongoId = mongo.ObjectId(bookId);
-  let book = {};
-
-  db.getBooksCollection().findOne({ _id: mongoId }, (error, response) => {
-    if (error) {
-      console.log(error);
-    }
-    book = response;
-    if (response !== null) {
-      db.getAuthorsCollection().findOne(
-        { _id: book.author },
-        (error, response) => {
-          if (error) {
-            console.log(error);
-          }
-          book = { ...book, author: response.name };
-          res.json(book);
-        }
-      );
-    } else {
-      res.send("Does not exist");
-      res.statusCode = 404;
-    }
-  });
+  const book = await db.books().findOne({ _id: mongoId });
+  const author = await db.authors().findOne({ _id: book.author });
+  bookModel = { ...book, author: author.name };
+  res.json(bookModel);
 };
 
 //#add book controller
 const addBook = async (req, res) => {
-  book = req.body;
+  let bookModel = {};
+  let book = req.body;
   const authorName = book.author;
 
   //#check if author exists in authors collection
-  db.getAuthorsCollection().findOneAndUpdate(
+  const author = await db.authors().findOneAndUpdate(
     { name: authorName },
     {
       $setOnInsert: {
         name: authorName,
       },
     },
-    { upsert: true },
-    (error, response) => {
-      if (error) {
-        console.log(error);
-        res.send(error);
-      }
-
-      //#check if author is added in authors collection
-      const existAuthor = response.lastErrorObject.updatedExisting;
-
-      if (existAuthor) {
-        const authorId = response.value._id;
-        book = { ...book, author: authorId };
-
-        //#add book (if author exists) with author's id
-        db.getBooksCollection()
-          .updateOne({ title: book.title }, { $set: book }, { upsert: true })
-          .then((response) => {
-            res.json({ isAdde: true });
-          })
-          .catch((err) => {
-            console.log(err);
-            res.send(err);
-          });
-      } else {
-        const authorId = response.lastErrorObject.upserted;
-        book = { ...book, author: authorId };
-
-        //#add book (if author does not exists) with author's id
-        db.getBooksCollection()
-          .updateOne({ title: book.title }, { $set: book }, { upsert: true })
-          .then((response) => {
-            res.json({ isAdde: true });
-          })
-          .catch((err) => {
-            console.log(err);
-            res.send(err);
-          });
-      }
-    }
+    { upsert: true }
   );
+  const existAuthor = author.lastErrorObject.updatedExisting;
+
+  if (existAuthor) {
+    const authorId = author.value._id;
+    let bookModel = { ...book, author: authorId };
+
+    await db
+      .books()
+      .updateOne({ title: book.title }, { $set: bookModel }, { upsert: true });
+
+    res.json({ isAdde: true });
+  } else {
+    const authorId = author.lastErrorObject.upserted;
+    bookModel = { ...book, author: authorId };
+
+    await db
+      .books()
+      .updateOne({ title: book.title }, { $set: bookModel }, { upsert: true });
+
+    res.json({ isAdde: true });
+  }
 };
 
 const deleteBook = async (req, res) => {
   const bookId = req.params["bookId"].trim().toString();
   const mongoId = mongo.ObjectId(bookId);
+  const deleteBook = await db.books().deleteOne({ _id: mongoId });
 
-  db.getBooksCollection()
-    .deleteOne({ _id: mongoId })
-    .then((response) => {
-      res.json({ isDeleted: response.acknowledged });
-    })
-    .catch((err) => {
-      res.send(err);
-      console.log(err);
-    });
+  res.json({ isDeleted: deleteBook.deletedCount > 0 ? true : false });
 };
 
 const updateBook = async (req, res) => {
   const bookData = req.body;
   const bookId = req.params["bookId"].trim().toString();
   const mongoId = mongo.ObjectId(bookId);
+  const updateBook = await db
+    .books()
+    .updateOne({ _id: mongoId }, { $set: bookData });
 
-  db.getBooksCollection()
-    .updateOne({ _id: mongoId }, { $set: bookData })
-    .then((response) => {
-      res.json({ isUpdated: response.acknowledged });
-    })
-    .catch((err) => {
-      res.send(err);
-    });
+  res.json({ isUpdated: updateBook.modifiedCount > 0 ? true : false });
 };
 
 module.exports = { getAllBooks, getBookById, addBook, deleteBook, updateBook };

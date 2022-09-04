@@ -30,6 +30,6 @@ const getAuthorsCollection = () => {
 };
 
 module.exports.connectDB = connectDB;
-module.exports.getCurrentDb = getCurrentDb;
-module.exports.getBooksCollection = getBooksCollection;
-module.exports.getAuthorsCollection = getAuthorsCollection;
+module.exports.db = getCurrentDb;
+module.exports.books = getBooksCollection;
+module.exports.authors = getAuthorsCollection;
