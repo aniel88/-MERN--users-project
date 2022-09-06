@@ -1,5 +1,10 @@
 const mongo = require("mongodb");
 const db = require("../config/database");
+const multer = require("multer");
+var upload = multer({
+  limits: { fileSize: 1064960 },
+  dest: "/uploads/",
+}).single("picture");
 
 const getAllBooks = async (req, res) => {
   try {
@@ -132,4 +137,17 @@ const updateBook = async (req, res) => {
   }
 };
 
-module.exports = { getAllBooks, getBookById, addBook, deleteBook, updateBook };
+const uploadPicture = (req, res) => {
+  upload(req, res, (error) => {
+    console.log(req.file);
+  });
+};
+
+module.exports = {
+  getAllBooks,
+  getBookById,
+  addBook,
+  deleteBook,
+  updateBook,
+  uploadPicture,
+};

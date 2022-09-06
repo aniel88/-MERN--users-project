@@ -8,6 +8,7 @@ const {
   addBook,
   deleteBook,
   updateBook,
+  uploadPicture,
 } = require("../controllers/bookController");
 
 //#show all data books
@@ -24,5 +25,7 @@ router.delete("/:bookId([0-9a-fA-F]{24})", deleteBook);
 
 //#update a book by id
 router.put("/:bookId([0-9a-fA-F]{24})", updateBook);
+
+router.post("/upload", uploadPicture);
 
 module.exports = router;
